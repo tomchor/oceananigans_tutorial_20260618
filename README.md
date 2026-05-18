@@ -1,6 +1,6 @@
-# Oceananigans LES Tutorial
+# Oceananigans Tutorial
 
-Tutorial materials for a hands-on **Large-Eddy Simulation (LES) with Oceananigans** session, hosted by:
+Tutorial materials for a hands-on **Oceananigans** session, hosted by:
 
 > **Physical Oceanography Department — CICESE**
 > Julio Sheinbaum's group
@@ -12,14 +12,14 @@ This hands-on tutorial introduces [Oceananigans.jl](https://github.com/CliMA/Oce
 
 ## This repository
 
-Each subdirectory is a self-contained example that can be run interactively in a Julia REPL or executed as a script.
+Each subdirectory is a self-contained example that can be run interactively in a Julia REPL or executed as a script. Together they showcase a range of Oceananigans (and Breeze) capabilities: nonhydrostatic flow, immersed boundaries, stratified shear instabilities, turbulence closures, and moist atmospheric dynamics.
 
 | Directory | Description |
 |---|---|
-| `dry_atmosphere_les/` | Doubly-periodic 3D atmosphere LES driven by a pressure-gradient body force and quadratic surface drag, with a passive tracer |
+| `dry_atmosphere_les/` | Doubly-periodic 3D atmosphere simulation driven by a pressure-gradient body force and quadratic surface drag, with a passive tracer |
 | `hill_flow/` | 2D nonhydrostatic flow past a Gaussian hill using the immersed boundary method |
-| `kelvin_helmholtz/` | 2D Kelvin-Helmholtz instability in a stratified shear layer; implicit LES via WENO dissipation |
-| `free_convection/` | 3D atmospheric free convection heated from below with dynamic Smagorinsky SGS closure |
+| `kelvin_helmholtz/` | 2D Kelvin-Helmholtz instability in a stratified shear layer |
+| `free_convection/` | 3D atmospheric free convection heated from below with dynamic Smagorinsky closure |
 | `rain_over_ocean/` | 2D precipitating shallow cumulus convection (RICO case) using Breeze's anelastic model with one-moment cloud microphysics |
 
 Each directory contains a simulation script (e.g. `hill_flow.jl`) and a matching plot script (e.g. `plot_hill_flow.jl`). Run the simulation first to produce the output file, then run the plot script to generate the animation.
