@@ -58,24 +58,24 @@ geostrophic = geostrophic_forcings(z -> AtmosphericProfilesLibrary.Rico_geostrop
                                    z -> AtmosphericProfilesLibrary.Rico_geostrophic_vg(FT)(z))
 
 # --- Large-scale moisture tendency ---
-ρᵣ = reference_state.density
-∂t_ρqᵉ = Field{Nothing, Nothing, Center}(grid)
-set!(∂t_ρqᵉ, z -> AtmosphericProfilesLibrary.Rico_dqtdt(FT)(z))
-set!(∂t_ρqᵉ, ρᵣ * ∂t_ρqᵉ)
-∂t_ρqᵉ_forcing = Forcing(∂t_ρqᵉ)
+∂t_qᵉ = Field{Nothing, Nothing, Center}(grid)
+set!(∂t_qᵉ, z -> AtmosphericProfilesLibrary.Rico_dqtdt(FT)(z))
+∂t_qᵉ_forcing = Forcing(∂t_qᵉ)
 
 # --- Radiative cooling (−2.5 K/day, uniform) ---
-∂t_ρθ = Field{Nothing, Nothing, Center}(grid)
-set!(∂t_ρθ, ρᵣ * (-2.5 / day))
-ρθ_forcing = Forcing(∂t_ρθ)
+∂t_θ = Field{Nothing, Nothing, Center}(grid)
+set!(∂t_θ, -2.5 / day)
+θ_forcing = Forcing(∂t_θ)
 
 # --- Assemble forcing and boundary conditions ---
-forcing = (ρu  = (subsidence, geostrophic.ρu),
-           ρv  = (subsidence, geostrophic.ρv),
-           ρw  = sponge,
-           ρqᵉ = (subsidence, ∂t_ρqᵉ_forcing),
-           ρθ  = (subsidence, ρθ_forcing))
+# Forcing keys use specific prognostic names (u, v, w, qᵉ, θ).
+forcing = (u  = (subsidence, geostrophic.u),
+           v  = (subsidence, geostrophic.v),
+           w  = sponge,
+           qᵉ = (subsidence, ∂t_qᵉ_forcing),
+           θ  = (subsidence, θ_forcing))
 
+# Boundary conditions still use the density-weighted names (ρe, ρqᵉ).
 boundary_conditions = (ρe = ρe_bcs, ρqᵉ = ρqᵉ_bcs)
 
 # --- One-moment cloud microphysics (autoconversion + accretion) ---
