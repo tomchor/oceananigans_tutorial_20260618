@@ -2,7 +2,8 @@ using ClimaOcean
 using Oceananigans
 using Oceananigans.Units
 using NCDatasets
-using Dates
+using Dates: DateTime
+using Downloads
 using Printf
 
 # =============================================================================
@@ -48,15 +49,34 @@ date   = DateTime(1993, 1, 1)
 T_meta = Metadatum(:temperature; date, dataset=ECCO4Monthly())
 S_meta = Metadatum(:salinity;    date, dataset=ECCO4Monthly())
 
-foreach(download_with_fallback, (T_meta, S_meta))
+# Pull ECCO snapshots directly from the public NumericalEarthArtifacts mirror.
+# (ClimaOcean's `download_with_fallback` would also work but tries the primary
+# ECCO server first, emitting a loud warning + stack trace when ECCO_USERNAME
+# isn't set. This bypass goes straight to the mirror — same files, no noise.)
+const ARTIFACTS_BASE_URL = "https://github.com/NumericalEarth/NumericalEarthArtifacts/releases/download/data-v1/"
+
+function download_from_mirror(metadata)
+    filepath = joinpath(metadata.dir, metadata.filename)
+    isfile(filepath) && return filepath
+    mkpath(dirname(filepath))
+    url = ARTIFACTS_BASE_URL * basename(filepath)
+    @info "Downloading $(basename(filepath)) from NumericalEarthArtifacts mirror…"
+    Downloads.download(url, filepath)
+    return filepath
+end
+
+foreach(download_from_mirror, (T_meta, S_meta))
 set!(ocean.model, T=T_meta, S=S_meta)
 
 # --- Atmospheric forcing (repeat-year JRA55 reanalysis) ---
 atmosphere = JRA55PrescribedAtmosphere(arch; time_indices_in_memory=10)
 radiation  = JRA55PrescribedRadiation(arch; time_indices_in_memory=10)
 
-# --- Coupled ocean–atmosphere model (no sea ice, for simplicity) ---
-coupled_model = OceanSeaIceModel(ocean; atmosphere, radiation)
+# --- Coupled ocean–atmosphere model (no dynamic sea ice, for simplicity) ---
+# OceanOnlyModel couples the ocean to the prescribed atmosphere/radiation and
+# defaults sea ice to a FreezingLimitedOceanTemperature constraint (a freezing
+# limiter, not a dynamic sea-ice model) so polar cells stay above freezing.
+coupled_model = OceanOnlyModel(ocean; atmosphere, radiation)
 
 # --- Simulation ---
 simulation = Simulation(coupled_model; Δt=30minutes, stop_time=10days)
