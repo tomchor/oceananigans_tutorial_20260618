@@ -1,7 +1,7 @@
 using Oceananigans
 using Oceananigans.Units
+using Oceanostics.ProgressMessengers
 using NCDatasets
-using Printf
 using Random
 
 # =============================================================================
@@ -57,15 +57,9 @@ set!(model, b=bᵢ)
 simulation = Simulation(model; Δt=20minutes, stop_time=20days)
 conjure_time_step_wizard!(simulation, IterationInterval(20), cfl=0.2, max_Δt=20minutes)
 
-wall_clock = Ref(time_ns())
-function progress(sim)
-    u, v, w = sim.model.velocities
-    elapsed = prettytime(1e-9 * (time_ns() - wall_clock[]))
-    @info @sprintf("t = %s, Δt = %s, max|u| = %.2e m/s, max|v| = %.2e m/s, wall: %s",
-                   prettytime(time(sim)), prettytime(sim.Δt),
-                   maximum(abs, u), maximum(abs, v), elapsed)
-    wall_clock[] = time_ns()
-end
+# Oceanostics' TimedMessenger reports simulation time, Δt, max velocities,
+# per-step wall time, and stability (CFL) numbers.
+progress = TimedMessenger()
 add_callback!(simulation, progress, IterationInterval(100))
 
 # --- Output ---
