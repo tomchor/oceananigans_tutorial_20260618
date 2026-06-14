@@ -21,6 +21,7 @@ Each subdirectory is a self-contained example that can be run interactively in a
 | `kelvin_helmholtz/` | 2D Kelvin-Helmholtz instability in a stratified shear layer |
 | `free_convection/` | 3D atmospheric free convection heated from below with dynamic Smagorinsky closure |
 | `rain_over_ocean/` | 2D precipitating shallow cumulus convection (RICO case) using Breeze's anelastic model with one-moment cloud microphysics |
+| `coarse_global_ocean/` | Coarsened (4°) coupled ocean–atmosphere global simulation using ClimaOcean, initialized from ECCO and forced by JRA55 reanalysis |
 
 Each directory contains a simulation script (e.g. `hill_flow.jl`) and a matching plot script (e.g. `plot_hill_flow.jl`). Run the simulation first to produce the output file, then run the plot script to generate the animation.
 
