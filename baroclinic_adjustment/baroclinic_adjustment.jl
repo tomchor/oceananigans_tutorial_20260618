@@ -29,7 +29,7 @@ M² = 1e-7                # s⁻², horizontal buoyancy gradient at the front
 ϵb = 1e-2 * Δb           # initial noise amplitude (seeds the instability)
 
 # --- Grid ---
-Nx, Ny, Nz = 48, 48, 8
+Nx, Ny, Nz = 128, 128, 8
 
 grid = RectilinearGrid(size     = (Nx, Ny, Nz),
                        x        = (0, Lx),
@@ -54,7 +54,7 @@ bᵢ(x, y, z) = N² * z + Δb * ramp(y, Δy) + ϵb * randn()
 set!(model, b=bᵢ)
 
 # --- Simulation ---
-simulation = Simulation(model; Δt=20minutes, stop_time=20days)
+simulation = Simulation(model; Δt=20minutes, stop_time=30days)
 conjure_time_step_wizard!(simulation, IterationInterval(20), cfl=0.2, max_Δt=20minutes)
 
 # Oceanostics' TimedMessenger reports simulation time, Δt, max velocities,
