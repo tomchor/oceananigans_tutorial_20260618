@@ -40,8 +40,8 @@ grid = ImmersedBoundaryGrid(underlying_grid, GridFittedBottom(hill))
 
 # --- Boundary conditions ---
 drag = BulkDrag(coefficient=Cd)
-u_bcs = FieldBoundaryConditions(west     = OpenBoundaryCondition(U∞), # Constant inflow
-                                east     = OpenBoundaryCondition(U∞, scheme = PerturbationAdvection()), # Perturbations get advected out
+u_bcs = FieldBoundaryConditions(west     = NormalFlowBoundaryCondition(U∞), # Constant inflow
+                                east     = NormalFlowBoundaryCondition(U∞, scheme = PerturbationAdvection()), # Perturbations get advected out
                                 bottom   = drag,
                                 immersed = drag)
 

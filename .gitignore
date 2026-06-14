@@ -2,7 +2,6 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-Manifest.toml
 
 # Output files
 *.nc
