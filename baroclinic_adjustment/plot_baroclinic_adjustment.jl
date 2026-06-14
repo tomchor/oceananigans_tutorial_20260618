@@ -39,8 +39,8 @@ Nt = length(times)
 # --- Colormap limits ---
 b_min, b_max = extrema(b_data)
 ζ_lim        = max(quantile(abs.(vec(ζ_data)), 0.99), eps())
-U_lim        = max(quantile(abs.(vec(U_data)), 0.99), eps())
-V_lim        = max(quantile(abs.(vec(V_data)), 0.99), eps())
+# Shared limit so one colorbar serves both zonal-mean velocity panels
+UV_lim       = max(quantile(abs.(vec(U_data)), 0.99), quantile(abs.(vec(V_data)), 0.99), eps())
 
 # --- Figure layout ---
 fig = Figure(size=(1300, 900))
@@ -64,13 +64,18 @@ V_plt = @lift view(V_data, :, :, $n)
 
 hm_b = heatmap!(ax_b, xc, yc, b_plt; colormap=:thermal, colorrange=(b_min, b_max))
 hm_ζ = heatmap!(ax_ζ, xf, yf, ζ_plt; colormap=:balance, colorrange=(-ζ_lim, ζ_lim))
-hm_U = heatmap!(ax_U, y_centers, z_centers, U_plt; colormap=:balance, colorrange=(-U_lim, U_lim))
-hm_V = heatmap!(ax_V, y_faces,   z_centers, V_plt; colormap=:balance, colorrange=(-V_lim, V_lim))
+hm_U = heatmap!(ax_U, y_centers, z_centers, U_plt; colormap=:balance, colorrange=(-UV_lim, UV_lim))
+hm_V = heatmap!(ax_V, y_faces,   z_centers, V_plt; colormap=:balance, colorrange=(-UV_lim, UV_lim))
 
-Colorbar(fig[1, 2], hm_b; label="b (m s⁻²)")
-Colorbar(fig[1, 4], hm_ζ; label="ζ (s⁻¹)")
-Colorbar(fig[2, 2], hm_U; label="u (m s⁻¹)")
-Colorbar(fig[2, 4], hm_V; label="v (m s⁻¹)")
+Colorbar(fig[1, 2], hm_b; label="b (m s⁻²)", height=Relative(0.8))
+Colorbar(fig[1, 4], hm_ζ; label="ζ (s⁻¹)",  height=Relative(0.8))
+# One shared colorbar to the right of the right-hand zonal-mean velocity panel
+Colorbar(fig[2, 4], hm_U; label="u, v (m s⁻¹)", height=Relative(0.8))
+
+# Size the two panel columns purely by ratio (not by content) so the left and
+# right panels in each row come out the same width.
+colsize!(fig.layout, 1, Auto(false))
+colsize!(fig.layout, 3, Auto(false))
 
 # --- Record animation ---
 record(fig, "baroclinic_adjustment.mp4", 1:Nt; framerate=10) do nn
