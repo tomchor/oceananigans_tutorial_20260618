@@ -1,4 +1,5 @@
 using Oceananigans
+using NCDatasets  # activates Oceananigans' NetCDF extension so FieldTimeSeries can read .nc output
 using GLMakie
 using Printf
 using Statistics: quantile
@@ -16,6 +17,10 @@ v_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "v")
 
 times = T_ts.times
 Nt    = length(times)
+
+# Surface fields were saved with indices=(:, :, Nz), so each field keeps its
+# original vertical index (k=Nz), not a reindexed k=1. Slice at that level.
+k_surf = size(T_ts.grid, 3)
 
 # --- Colormap limits (ignore NaN-filled land cells) ---
 T_clean = filter(isfinite, vec(interior(T_ts)))
@@ -42,10 +47,10 @@ ax_S = Axis(fig[1, 3]; title="Surface salinity  S",            kwargs...)
 ax_u = Axis(fig[2, 1]; title="Surface zonal velocity  u",      kwargs...)
 ax_v = Axis(fig[2, 3]; title="Surface meridional velocity  v", kwargs...)
 
-T_plt = @lift view(T_ts[$n], :, :, 1)
-S_plt = @lift view(S_ts[$n], :, :, 1)
-u_plt = @lift view(u_ts[$n], :, :, 1)
-v_plt = @lift view(v_ts[$n], :, :, 1)
+T_plt = @lift view(T_ts[$n], :, :, k_surf)
+S_plt = @lift view(S_ts[$n], :, :, k_surf)
+u_plt = @lift view(u_ts[$n], :, :, k_surf)
+v_plt = @lift view(v_ts[$n], :, :, k_surf)
 
 hm_T = heatmap!(ax_T, T_plt; colormap=:thermal, colorrange=(T_min, T_max),     nan_color=:gray)
 hm_S = heatmap!(ax_S, S_plt; colormap=:haline,  colorrange=(S_min, S_max),     nan_color=:gray)
@@ -56,6 +61,12 @@ Colorbar(fig[1, 2], hm_T; label="T (°C)")
 Colorbar(fig[1, 4], hm_S; label="S (psu)")
 Colorbar(fig[2, 2], hm_u; label="u (m s⁻¹)")
 Colorbar(fig[2, 4], hm_v; label="v (m s⁻¹)")
+
+# Force the two map columns (1 and 3) to equal width so the left plots are the
+# same size as the right. Without this, the fixed-aspect axes let Makie collapse
+# column 1 and give all the slack to column 3. Columns 2 and 4 hold the colorbars.
+colsize!(fig.layout, 1, Relative(0.43))
+colsize!(fig.layout, 3, Relative(0.43))
 
 # --- Record animation ---
 record(fig, "coarse_global_ocean.mp4", 1:Nt; framerate=4) do nn
