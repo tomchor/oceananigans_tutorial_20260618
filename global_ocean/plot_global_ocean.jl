@@ -30,8 +30,8 @@ v_clean = filter(isfinite, vec(interior(v_ts)))
 
 T_min, T_max = quantile(T_clean, 0.02), quantile(T_clean, 0.98)
 S_min, S_max = quantile(S_clean, 0.02), quantile(S_clean, 0.98)
-u_lim = max(quantile(abs.(u_clean), 0.99), eps())
-v_lim = max(quantile(abs.(v_clean), 0.99), eps())
+# Shared limit so one colorbar serves both velocity panels
+uv_lim = max(quantile(abs.(u_clean), 0.99), quantile(abs.(v_clean), 0.99), eps())
 
 # --- Figure layout ---
 fig = Figure(size=(1400, 900))
@@ -54,19 +54,19 @@ v_plt = @lift view(v_ts[$n], :, :, k_surf)
 
 hm_T = heatmap!(ax_T, T_plt; colormap=:thermal, colorrange=(T_min, T_max),     nan_color=:gray)
 hm_S = heatmap!(ax_S, S_plt; colormap=:haline,  colorrange=(S_min, S_max),     nan_color=:gray)
-hm_u = heatmap!(ax_u, u_plt; colormap=:balance, colorrange=(-u_lim, u_lim),    nan_color=:gray)
-hm_v = heatmap!(ax_v, v_plt; colormap=:balance, colorrange=(-v_lim, v_lim),    nan_color=:gray)
+hm_u = heatmap!(ax_u, u_plt; colormap=:balance, colorrange=(-uv_lim, uv_lim),  nan_color=:gray)
+hm_v = heatmap!(ax_v, v_plt; colormap=:balance, colorrange=(-uv_lim, uv_lim),  nan_color=:gray)
 
-Colorbar(fig[1, 2], hm_T; label="T (°C)")
-Colorbar(fig[1, 4], hm_S; label="S (psu)")
-Colorbar(fig[2, 2], hm_u; label="u (m s⁻¹)")
-Colorbar(fig[2, 4], hm_v; label="v (m s⁻¹)")
+Colorbar(fig[1, 2], hm_T; label="T (°C)",       height=Relative(0.8))
+Colorbar(fig[1, 4], hm_S; label="S (psu)",      height=Relative(0.8))
+# One shared colorbar to the right of the v panel serves both velocity panels
+Colorbar(fig[2, 4], hm_u; label="u, v (m s⁻¹)", height=Relative(0.8))
 
-# Force the two map columns (1 and 3) to equal width so the left plots are the
-# same size as the right. Without this, the fixed-aspect axes let Makie collapse
-# column 1 and give all the slack to column 3. Columns 2 and 4 hold the colorbars.
-colsize!(fig.layout, 1, Relative(0.43))
-colsize!(fig.layout, 3, Relative(0.43))
+# Size the two panel columns purely by ratio (not by content) so the left and
+# right panels in each row come out the same width. Without this, the fixed-aspect
+# axes let Makie collapse column 1 and give all the slack to column 3.
+colsize!(fig.layout, 1, Auto(false))
+colsize!(fig.layout, 3, Auto(false))
 
 # --- Record animation ---
 record(fig, "coarse_global_ocean.mp4", 1:Nt; framerate=4) do nn
