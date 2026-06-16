@@ -5,15 +5,15 @@ using Printf
 using Statistics: quantile
 
 # =============================================================================
-# Animate coarse_global_ocean.jl output.
-# Run coarse_global_ocean.jl first to produce coarse_global_ocean_surface.nc.
+# Animate global_ocean.jl output.
+# Run global_ocean.jl first to produce global_ocean_surface.nc.
 # =============================================================================
 
 # --- Load surface timeseries ---
-T_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "T")
-S_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "S")
-u_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "u")
-v_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "v")
+T_ts = FieldTimeSeries("global_ocean_surface.nc", "T")
+S_ts = FieldTimeSeries("global_ocean_surface.nc", "S")
+u_ts = FieldTimeSeries("global_ocean_surface.nc", "u")
+v_ts = FieldTimeSeries("global_ocean_surface.nc", "v")
 
 times = T_ts.times
 Nt    = length(times)
@@ -37,7 +37,7 @@ uv_lim = max(quantile(abs.(u_clean), 0.99), quantile(abs.(v_clean), 0.99), eps()
 fig = Figure(size=(1400, 900))
 
 n = Observable(1)
-title_str = @lift @sprintf("Coarse global ocean  —  t = %.1f days", times[$n] / 86400)
+title_str = @lift @sprintf("Global ocean  —  t = %.1f days", times[$n] / 86400)
 Label(fig[0, :], title_str, fontsize=20)
 
 kwargs = (xlabel="longitude (°)", ylabel="latitude (°)", aspect=2)
@@ -69,8 +69,8 @@ colsize!(fig.layout, 1, Auto(false))
 colsize!(fig.layout, 3, Auto(false))
 
 # --- Record animation ---
-record(fig, "coarse_global_ocean.mp4", 1:Nt; framerate=4) do nn
+record(fig, "global_ocean.mp4", 1:Nt; framerate=4) do nn
     n[] = nn
 end
 
-@info "Animation saved to coarse_global_ocean.mp4"
+@info "Animation saved to global_ocean.mp4"
