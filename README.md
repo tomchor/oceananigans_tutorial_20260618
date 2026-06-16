@@ -16,13 +16,12 @@ Each subdirectory is a self-contained example that can be run interactively in a
 
 | Directory | Description |
 |---|---|
-| `dry_atmosphere_les/` | Doubly-periodic 3D atmosphere simulation driven by a pressure-gradient body force and quadratic surface drag, with a passive tracer |
 | `hill_flow/` | 2D nonhydrostatic flow past a Gaussian hill using the immersed boundary method |
 | `kelvin_helmholtz/` | 2D Kelvin-Helmholtz instability in a stratified shear layer |
 | `free_convection/` | 3D atmospheric free convection heated from below with dynamic Smagorinsky closure |
 | `rain_over_ocean/` | 2D precipitating shallow cumulus convection (RICO case) using Breeze's anelastic model with one-moment cloud microphysics |
 | `baroclinic_adjustment/` | 3D hydrostatic free-surface model of an unstable meridional buoyancy front on a β-plane, equilibrating via mesoscale eddies |
-| `coarse_global_ocean/` | Coarsened (4°) coupled ocean–atmosphere global simulation using ClimaOcean, initialized from ECCO and forced by JRA55 reanalysis |
+| `global_ocean/` | Coarsened (4°) coupled ocean–atmosphere global simulation using ClimaOcean, initialized from ECCO and forced by JRA55 reanalysis |
 
 Each directory contains a simulation script (e.g. `hill_flow.jl`) and a matching plot script (e.g. `plot_hill_flow.jl`). Run the simulation first to produce the output file, then run the plot script to generate the animation.
 
@@ -41,12 +40,13 @@ This will install [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl), [
 Two examples have their own self-contained Julia environments (because they pull in heavier dependencies that the rest of the tutorial doesn't need):
 
 - `rain_over_ocean/` — needs [Breeze.jl](https://github.com/NumericalEarth/Breeze.jl), CloudMicrophysics, AtmosphericProfilesLibrary.
+- `global_ocean/` — needs [ClimaOcean.jl](https://github.com/CliMA/ClimaOcean.jl). The first run also downloads ECCO initial conditions, ETOPO bathymetry, and JRA55 atmospheric reanalysis (~GB total) into the artifact cache; subsequent runs reuse the cache.
 
 For those two, activate the folder's project before running:
 
 ```julia
 using Pkg
-Pkg.activate("coarse_global_ocean")   # or "rain_over_ocean"
+Pkg.activate("global_ocean")   # or "rain_over_ocean"
 Pkg.instantiate()
 ```
 
@@ -58,5 +58,3 @@ Each script can be run from the Julia REPL (recommended for interactive explorat
 julia --project=. kelvin_helmholtz/kelvin_helmholtz.jl              # run simulation
 julia --project=. kelvin_helmholtz/plot_kelvin_helmholtz.jl         # produce animation
 ```
-
-Because the scripts avoid module-level constants, you can freely modify parameters and re-`include` them in the same REPL session without restarting Julia.

@@ -7,7 +7,7 @@ using Downloads
 using Printf
 
 # =============================================================================
-# Coarsened global ocean — a laptop-friendly version of ClimaOcean's
+# Global ocean — a laptop-friendly version of ClimaOcean's
 # `latitude_longitude_ocean_sea_ice.jl` example.
 #
 # Coupled ocean–atmosphere simulation on a coarse 4° lat-lon grid (90×38×20)
@@ -93,7 +93,7 @@ ocean_outputs = merge(ocean.model.tracers, ocean.model.velocities)
 
 ocean.output_writers[:surface] = NetCDFWriter(ocean.model, ocean_outputs;
     schedule           = TimeInterval(1day),
-    filename           = "coarse_global_ocean_surface.nc",
+    filename           = "global_ocean_surface.nc",
     indices            = (:, :, ocean.model.grid.Nz),
     overwrite_existing = true)
 
