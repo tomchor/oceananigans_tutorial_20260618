@@ -1,11 +1,13 @@
 using Oceananigans
+import NCDatasets   # loads the NetCDF FieldTimeSeries reader extension
+
 using GLMakie
 using Printf
 using Statistics: quantile
 
 # =============================================================================
 # Animate baroclinic_adjustment.jl output.
-# Run baroclinic_adjustment.jl first to produce the .jld2 files.
+# Run baroclinic_adjustment.jl first to produce the .nc files.
 #
 # Each field is read back as a FieldTimeSeries and handed straight to heatmap!.
 # Oceananigans' Makie recipe pulls the coordinates from the field and drops the
@@ -14,10 +16,10 @@ using Statistics: quantile
 # =============================================================================
 
 # --- Load timeseries ---
-b_ts = FieldTimeSeries("baroclinic_adjustment_surface.jld2", "b")   # surface buoyancy
-ζ_ts = FieldTimeSeries("baroclinic_adjustment_surface.jld2", "ζ")   # surface vorticity
-U_ts = FieldTimeSeries("baroclinic_adjustment_zonal.jld2",   "u")   # zonal-mean zonal velocity
-V_ts = FieldTimeSeries("baroclinic_adjustment_zonal.jld2",   "v")   # zonal-mean meridional velocity
+b_ts = FieldTimeSeries("baroclinic_adjustment_surface.nc", "b")   # surface buoyancy
+ζ_ts = FieldTimeSeries("baroclinic_adjustment_surface.nc", "ζ")   # surface vorticity
+U_ts = FieldTimeSeries("baroclinic_adjustment_zonal.nc",   "u")   # zonal-mean zonal velocity
+V_ts = FieldTimeSeries("baroclinic_adjustment_zonal.nc",   "v")   # zonal-mean meridional velocity
 
 times = b_ts.times
 Nt    = length(times)
@@ -26,8 +28,7 @@ Nt    = length(times)
 b_min, b_max = extrema(interior(b_ts))
 ζ_lim        = max(quantile(abs.(vec(interior(ζ_ts))), 0.99), eps())
 # Shared limit so one colorbar serves both zonal-mean velocity panels
-UV_lim       = max(quantile(abs.(vec(interior(U_ts))), 0.99),
-                   quantile(abs.(vec(interior(V_ts))), 0.99), eps())
+UV_lim       = max(quantile(abs.(vec(interior(U_ts))), 0.99), quantile(abs.(vec(interior(V_ts))), 0.99), eps())
 
 # --- Figure layout ---
 fig = Figure(size=(1300, 900))

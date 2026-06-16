@@ -71,16 +71,16 @@ U = Average(u, dims=1)         # zonal-mean zonal velocity
 V = Average(v, dims=1)         # zonal-mean meridional velocity
 
 # Surface (z = top) snapshot: eddies and vorticity
-simulation.output_writers[:surface] = JLD2Writer(model, (; b, ζ);
+simulation.output_writers[:surface] = NetCDFWriter(model, (; b, ζ);
     schedule           = TimeInterval(12hours),
-    filename           = "baroclinic_adjustment_surface.jld2",
+    filename           = "baroclinic_adjustment_surface.nc",
     indices            = (:, :, grid.Nz),
     overwrite_existing = true)
 
 # Zonal-mean (y, z) view: residual overturning + jets
-simulation.output_writers[:zonal] = JLD2Writer(model, (; b=B, u=U, v=V);
+simulation.output_writers[:zonal] = NetCDFWriter(model, (; b=B, u=U, v=V);
     schedule           = TimeInterval(12hours),
-    filename           = "baroclinic_adjustment_zonal.jld2",
+    filename           = "baroclinic_adjustment_zonal.nc",
     overwrite_existing = true)
 
 run!(simulation)
