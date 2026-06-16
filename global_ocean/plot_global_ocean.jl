@@ -1,5 +1,5 @@
 using Oceananigans
-using NCDatasets  # activates Oceananigans' NetCDF extension so FieldTimeSeries can read .nc output
+import NCDatasets   # loads Oceananigans' NetCDF extension
 using GLMakie
 using Printf
 using Statistics: quantile
@@ -9,7 +9,7 @@ using Statistics: quantile
 # Run coarse_global_ocean.jl first to produce coarse_global_ocean_surface.nc.
 # =============================================================================
 
-# --- Load surface timeseries ---
+#+++ Load surface timeseries
 T_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "T")
 S_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "S")
 u_ts = FieldTimeSeries("coarse_global_ocean_surface.nc", "u")
@@ -21,8 +21,9 @@ Nt    = length(times)
 # Surface fields were saved with indices=(:, :, Nz), so each field keeps its
 # original vertical index (k=Nz), not a reindexed k=1. Slice at that level.
 k_surf = size(T_ts.grid, 3)
+#---
 
-# --- Colormap limits (ignore NaN-filled land cells) ---
+#+++ Colormap limits (ignore NaN-filled land cells)
 T_clean = filter(isfinite, vec(interior(T_ts)))
 S_clean = filter(isfinite, vec(interior(S_ts)))
 u_clean = filter(isfinite, vec(interior(u_ts)))
@@ -32,8 +33,9 @@ T_min, T_max = quantile(T_clean, 0.02), quantile(T_clean, 0.98)
 S_min, S_max = quantile(S_clean, 0.02), quantile(S_clean, 0.98)
 # Shared limit so one colorbar serves both velocity panels
 uv_lim = max(quantile(abs.(u_clean), 0.99), quantile(abs.(v_clean), 0.99), eps())
+#---
 
-# --- Figure layout ---
+#+++ Figure layout
 fig = Figure(size=(1400, 900))
 
 n = Observable(1)
@@ -67,10 +69,12 @@ Colorbar(fig[2, 4], hm_u; label="u, v (m s⁻¹)", height=Relative(0.8))
 # axes let Makie collapse column 1 and give all the slack to column 3.
 colsize!(fig.layout, 1, Auto(false))
 colsize!(fig.layout, 3, Auto(false))
+#---
 
-# --- Record animation ---
+#+++ Record animation
 record(fig, "coarse_global_ocean.mp4", 1:Nt; framerate=4) do nn
     n[] = nn
 end
 
 @info "Animation saved to coarse_global_ocean.mp4"
+#---

@@ -1,6 +1,5 @@
 using Oceananigans
-import NCDatasets   # loads the NetCDF FieldTimeSeries reader extension
-
+import NCDatasets   # loads Oceananigans' NetCDF extension
 using GLMakie
 using Printf
 using Statistics: quantile
@@ -15,7 +14,7 @@ using Statistics: quantile
 # never extract or pass nodes ourselves.
 # =============================================================================
 
-# --- Load timeseries ---
+#+++ Load timeseries
 b_ts = FieldTimeSeries("baroclinic_adjustment_surface.nc", "b")   # surface buoyancy
 ζ_ts = FieldTimeSeries("baroclinic_adjustment_surface.nc", "ζ")   # surface vorticity
 U_ts = FieldTimeSeries("baroclinic_adjustment_zonal.nc",   "u")   # zonal-mean zonal velocity
@@ -23,14 +22,16 @@ V_ts = FieldTimeSeries("baroclinic_adjustment_zonal.nc",   "v")   # zonal-mean m
 
 times = b_ts.times
 Nt    = length(times)
+#---
 
-# --- Colormap limits ---
+#+++ Colormap limits
 b_min, b_max = extrema(interior(b_ts))
 ζ_lim        = max(quantile(abs.(vec(interior(ζ_ts))), 0.99), eps())
 # Shared limit so one colorbar serves both zonal-mean velocity panels
 UV_lim       = max(quantile(abs.(vec(interior(U_ts))), 0.99), quantile(abs.(vec(interior(V_ts))), 0.99), eps())
+#---
 
-# --- Figure layout ---
+#+++ Figure layout
 fig = Figure(size=(1300, 900))
 
 n = Observable(1)
@@ -65,10 +66,12 @@ Colorbar(fig[2, 4], hm_U; label="u, v (m s⁻¹)", height=Relative(0.8))
 # right panels in each row come out the same width.
 colsize!(fig.layout, 1, Auto(false))
 colsize!(fig.layout, 3, Auto(false))
+#---
 
-# --- Record animation ---
+#+++ Record animation
 record(fig, "baroclinic_adjustment.mp4", 1:Nt; framerate=10) do nn
     n[] = nn
 end
 
 @info "Animation saved to baroclinic_adjustment.mp4"
+#---

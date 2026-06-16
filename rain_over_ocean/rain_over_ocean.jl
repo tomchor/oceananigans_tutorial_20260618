@@ -16,7 +16,7 @@ using Random
 
 Random.seed!(42)
 
-# --- Grid ---
+#+++ Grid
 Nx = 128
 Nz = 100
 
@@ -25,49 +25,57 @@ grid = RectilinearGrid(; size = (Nx, Nz),
                          z        = (0, 4000),    # 4 km
                          halo     = (5, 5),
                          topology = (Periodic, Flat, Bounded))
+#---
 
-# --- Reference state ---
+#+++ Reference state
 constants       = ThermodynamicConstants()
 reference_state = ReferenceState(grid, constants;
                                  surface_pressure      = 101540,
                                  potential_temperature = 297.9)
 dynamics = AnelasticDynamics(reference_state)
+#---
 
-# --- Bulk surface fluxes (vanZanten et al. 2011, eqs. 1–4) ---
+#+++ Bulk surface fluxes (vanZanten et al. 2011, eqs. 1–4)
 Cᵀ = 1.094e-3   # sensible heat transfer coefficient
 Cᵛ = 1.133e-3   # moisture transfer coefficient
 T₀ = 299.8      # sea-surface temperature (K)
 
 ρe_bcs  = FieldBoundaryConditions(bottom = BulkSensibleHeatFlux(coefficient = Cᵀ, surface_temperature = T₀))
 ρqᵉ_bcs = FieldBoundaryConditions(bottom = BulkVaporFlux(coefficient = Cᵛ, surface_temperature = T₀))
+#---
 
-# --- Sponge layer (damps w in upper 500 m) ---
+#+++ Sponge layer (damps w in upper 500 m)
 # GaussianMask only has a 3-arg method (x,y,z) so we use a plain 2-arg function for 2D
 sponge_mask(x, z) = exp(-((z - 3500)^2) / (2 * 500^2))
 sponge = Relaxation(rate = 1/8, mask = sponge_mask)
+#---
 
-# --- Large-scale subsidence ---
+#+++ Large-scale subsidence
 FT = eltype(grid)
 wˢ = Field{Nothing, Nothing, Face}(grid)
 set!(wˢ, z -> AtmosphericProfilesLibrary.Rico_subsidence(FT)(z))
 subsidence = SubsidenceForcing(wˢ)
+#---
 
-# --- Geostrophic wind forcing (f = 4.5×10⁻⁵ s⁻¹, ≈18°N) ---
+#+++ Geostrophic wind forcing (f = 4.5×10⁻⁵ s⁻¹, ≈18°N)
 coriolis  = FPlane(f = 4.5e-5)
 geostrophic = geostrophic_forcings(z -> AtmosphericProfilesLibrary.Rico_geostrophic_ug(FT)(z),
                                    z -> AtmosphericProfilesLibrary.Rico_geostrophic_vg(FT)(z))
+#---
 
-# --- Large-scale moisture tendency ---
+#+++ Large-scale moisture tendency
 ∂t_qᵉ = Field{Nothing, Nothing, Center}(grid)
 set!(∂t_qᵉ, z -> AtmosphericProfilesLibrary.Rico_dqtdt(FT)(z))
 ∂t_qᵉ_forcing = Forcing(∂t_qᵉ)
+#---
 
-# --- Radiative cooling (−2.5 K/day, uniform) ---
+#+++ Radiative cooling (−2.5 K/day, uniform)
 ∂t_θ = Field{Nothing, Nothing, Center}(grid)
 set!(∂t_θ, -2.5 / day)
 θ_forcing = Forcing(∂t_θ)
+#---
 
-# --- Assemble forcing and boundary conditions ---
+#+++ Assemble forcing and boundary conditions
 # Forcing keys use specific prognostic names (u, v, w, qᵉ, θ).
 forcing = (u  = (subsidence, geostrophic.u),
            v  = (subsidence, geostrophic.v),
@@ -77,8 +85,9 @@ forcing = (u  = (subsidence, geostrophic.u),
 
 # Boundary conditions still use the density-weighted names (ρe, ρqᵉ).
 boundary_conditions = (ρe = ρe_bcs, ρqᵉ = ρqᵉ_bcs)
+#---
 
-# --- One-moment cloud microphysics (autoconversion + accretion) ---
+#+++ One-moment cloud microphysics (autoconversion + accretion)
 BreezeCloudMicrophysicsExt = Base.get_extension(Breeze, :BreezeCloudMicrophysicsExt)
 using .BreezeCloudMicrophysicsExt: OneMomentCloudMicrophysics
 
@@ -91,8 +100,9 @@ model = AtmosphereModel(grid; dynamics, coriolis, microphysics,
                         momentum_advection = weno,
                         scalar_advection,
                         forcing, boundary_conditions)
+#---
 
-# --- Initial conditions ---
+#+++ Initial conditions
 θˡⁱ₀ = AtmosphericProfilesLibrary.Rico_θ_liq_ice(FT)
 qᵗ₀  = AtmosphericProfilesLibrary.Rico_q_tot(FT)
 u₀   = AtmosphericProfilesLibrary.Rico_u(FT)
@@ -105,8 +115,9 @@ uᵢ(x, z) = u₀(z)
 vᵢ(x, z) = v₀(z)
 
 set!(model, θ = θᵢ, qᵗ = qᵢ, u = uᵢ, v = vᵢ)
+#---
 
-# --- Simulation ---
+#+++ Simulation
 simulation = Simulation(model; Δt = 2, stop_time = 5hour)
 conjure_time_step_wizard!(simulation, cfl = 0.7)
 
@@ -126,8 +137,9 @@ function progress(sim)
 end
 
 add_callback!(simulation, progress, IterationInterval(100))
+#---
 
-# --- Output ---
+#+++ Output
 u, v, w = model.velocities
 
 simulation.output_writers[:fields] = JLD2Writer(model,
@@ -137,3 +149,4 @@ simulation.output_writers[:fields] = JLD2Writer(model,
     overwrite_existing = true)
 
 run!(simulation)
+#---

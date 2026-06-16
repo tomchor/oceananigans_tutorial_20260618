@@ -1,6 +1,7 @@
+using Oceananigans
+import NCDatasets   # loads Oceananigans' NetCDF extension
 using GLMakie
 using Printf
-using Oceananigans
 using Statistics: quantile
 
 # =============================================================================
@@ -9,7 +10,7 @@ using Statistics: quantile
 # free_convection_xz.nc.
 # =============================================================================
 
-# --- Load timeseries ---
+#+++ Load timeseries
 w_xy = FieldTimeSeries("free_convection_xy.nc", "w")
 T_xy = FieldTimeSeries("free_convection_xy.nc", "T")
 w_xz = FieldTimeSeries("free_convection_xz.nc", "w")
@@ -25,8 +26,9 @@ T_all = vcat(vec(interior(T_xy, :, :, 1, :)), vec(interior(T_xz, :, 1, :, :)))
 w_lim = quantile(abs.(w_all), 0.98)
 T_min = quantile(T_all, 0.02)
 T_max = quantile(T_all, 0.98)
+#---
 
-# --- Figure layout ---
+#+++ Figure layout
 fig = Figure(size=(1000, 860))
 
 n = Observable(1)
@@ -55,10 +57,12 @@ Colorbar(fig[1, 2], hm_w_xy; label="w (m/s)", vertical=true)
 Colorbar(fig[1, 4], hm_T_xy; label="θ (K)",   vertical=true)
 Colorbar(fig[2, 2], hm_w_xz; label="w (m/s)", vertical=true)
 Colorbar(fig[2, 4], hm_T_xz; label="θ (K)",   vertical=true)
+#---
 
-# --- Record animation ---
+#+++ Record animation
 record(fig, "free_convection.mp4", 1:Nt; framerate=15) do nn
     n[] = nn
 end
 
 @info "Animation saved to free_convection.mp4"
+#---

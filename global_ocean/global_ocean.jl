@@ -1,7 +1,7 @@
 using ClimaOcean
 using Oceananigans
 using Oceananigans.Units
-using NCDatasets
+import NCDatasets   # loads Oceananigans' NetCDF extension
 using Dates: DateTime
 using Downloads
 using Printf
@@ -23,7 +23,7 @@ using Printf
 
 arch = CPU()
 
-# --- Coarse global grid (4° lat-lon, 20 vertical levels) ---
+#+++ Coarse global grid (4° lat-lon, 20 vertical levels)
 Nx, Ny, Nz = 90, 38, 20
 depth      = 6000meters
 
@@ -39,12 +39,14 @@ bottom_height = regrid_bathymetry(underlying_grid; minimum_depth         = 10,
                                                    interpolation_passes  = 5,
                                                    major_basins          = 3)
 grid = ImmersedBoundaryGrid(underlying_grid, GridFittedBottom(bottom_height); active_cells_map=true)
+#---
 
-# --- Ocean (minimal closure for laptop speed) ---
+#+++ Ocean (minimal closure for laptop speed)
 closure = simplified_ocean_closure()
 ocean   = ocean_simulation(grid; closure)
+#---
 
-# --- Initial conditions from ECCO ---
+#+++ Initial conditions from ECCO
 date   = DateTime(1993, 1, 1)
 T_meta = Metadatum(:temperature; date, dataset=ECCO4Monthly())
 S_meta = Metadatum(:salinity;    date, dataset=ECCO4Monthly())
@@ -67,22 +69,26 @@ end
 
 foreach(download_from_mirror, (T_meta, S_meta))
 set!(ocean.model, T=T_meta, S=S_meta)
+#---
 
-# --- Atmospheric forcing (repeat-year JRA55 reanalysis) ---
+#+++ Atmospheric forcing (repeat-year JRA55 reanalysis)
 atmosphere = JRA55PrescribedAtmosphere(arch; time_indices_in_memory=10)
 radiation  = JRA55PrescribedRadiation(arch; time_indices_in_memory=10)
+#---
 
-# --- Coupled ocean–atmosphere model (no dynamic sea ice, for simplicity) ---
+#+++ Coupled ocean–atmosphere model (no dynamic sea ice, for simplicity)
 # OceanOnlyModel couples the ocean to the prescribed atmosphere/radiation and
 # defaults sea ice to a FreezingLimitedOceanTemperature constraint (a freezing
 # limiter, not a dynamic sea-ice model) so polar cells stay above freezing.
 coupled_model = OceanOnlyModel(ocean; atmosphere, radiation)
+#---
 
-# --- Simulation ---
+#+++ Simulation
 simulation = Simulation(coupled_model; Δt=30minutes, stop_time=10days)
 add_callback!(simulation, Progress(), IterationInterval(20))
+#---
 
-# --- Output: surface fields ---
+#+++ Output: surface fields
 ocean_outputs = merge(ocean.model.tracers, ocean.model.velocities)
 
 ocean.output_writers[:surface] = NetCDFWriter(ocean.model, ocean_outputs;
@@ -92,3 +98,4 @@ ocean.output_writers[:surface] = NetCDFWriter(ocean.model, ocean_outputs;
     overwrite_existing = true)
 
 run!(simulation)
+#---

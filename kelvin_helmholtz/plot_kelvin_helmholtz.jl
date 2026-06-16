@@ -1,5 +1,8 @@
 using Oceananigans
-import NCDatasets
+import NCDatasets   # loads Oceananigans' NetCDF extension
+using GLMakie
+using Printf
+using Statistics: quantile
 
 # =============================================================================
 # Animate kelvin_helmholtz.jl output.
@@ -10,26 +13,23 @@ plot_filepath = "kelvin_helmholtz.nc"
 
 #+++ Load timeseries
 @info "Loading timeseries..."
-ω_timeseries = FieldTimeSeries(plot_filepath, "ω")
-b_timeseries = FieldTimeSeries(plot_filepath, "b")
-S_timeseries = FieldTimeSeries(plot_filepath, "S")
+ω_ts = FieldTimeSeries(plot_filepath, "ω")
+b_ts = FieldTimeSeries(plot_filepath, "b")
+S_ts = FieldTimeSeries(plot_filepath, "S")
 
-using Statistics: quantile
-S_lim = quantile(vec(interior(S_timeseries)), 0.98)
+S_lim = quantile(vec(interior(S_ts)), 0.98)
 #---
 
 #+++ Build figure
-using GLMakie
 n = Observable(1)
 
-ωₙ = @lift ω_timeseries[$n]
-bₙ = @lift b_timeseries[$n]
-Sₙ = @lift S_timeseries[$n]
+ωₙ = @lift ω_ts[$n]
+bₙ = @lift b_ts[$n]
+Sₙ = @lift S_ts[$n]
 
 fig = Figure(size=(1200, 500))
 
-using Printf
-times = ω_timeseries.times
+times = ω_ts.times
 title = @lift @sprintf("Kelvin-Helmholtz Instability\nt = %.1f", times[$n])
 fig[1, 1:6] = Label(fig, title, fontsize=20, tellwidth=false, justification=:center)
 

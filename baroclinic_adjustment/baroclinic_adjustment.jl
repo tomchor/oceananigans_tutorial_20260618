@@ -1,7 +1,7 @@
 using Oceananigans
 using Oceananigans.Units
 using Oceanostics.ProgressMessengers
-using NCDatasets
+import NCDatasets   # loads Oceananigans' NetCDF extension
 using Random
 
 # =============================================================================
@@ -18,7 +18,7 @@ using Random
 
 Random.seed!(8675309)   # reproducible noise
 
-# --- Physical parameters ---
+#+++ Physical parameters
 Lx = 1000kilometers      # zonal extent
 Ly = 1000kilometers      # meridional extent
 Lz = 1kilometer          # depth
@@ -27,8 +27,9 @@ M² = 1e-7                # s⁻², horizontal buoyancy gradient at the front
 Δy = 100kilometers       # width of the front
 Δb = Δy * M²             # buoyancy jump across the front
 ϵb = 1e-2 * Δb           # initial noise amplitude (seeds the instability)
+#---
 
-# --- Grid ---
+#+++ Grid
 Nx, Ny, Nz = 128, 128, 8
 
 grid = RectilinearGrid(size     = (Nx, Ny, Nz),
@@ -36,24 +37,27 @@ grid = RectilinearGrid(size     = (Nx, Ny, Nz),
                        y        = (-Ly/2, Ly/2),
                        z        = (-Lz, 0),
                        topology = (Periodic, Bounded, Bounded))
+#---
 
-# --- Model ---
+#+++ Model
 model = HydrostaticFreeSurfaceModel(grid;
                                     coriolis           = BetaPlane(latitude = -45),
                                     buoyancy           = BuoyancyTracer(),
                                     tracers            = :b,
                                     momentum_advection = WENO(),
                                     tracer_advection   = WENO())
+#---
 
-# --- Initial conditions ---
+#+++ Initial conditions
 # Linear ramp from 0 to 1 between -Δy/2 and +Δy/2
 ramp(y, Δy) = min(max(0, y/Δy + 1/2), 1)
 
 # Stable stratification + meridional front + small noise
 bᵢ(x, y, z) = N² * z + Δb * ramp(y, Δy) + ϵb * randn()
 set!(model, b=bᵢ)
+#---
 
-# --- Simulation ---
+#+++ Simulation
 simulation = Simulation(model; Δt=20minutes, stop_time=30days)
 conjure_time_step_wizard!(simulation, IterationInterval(20), cfl=0.2, max_Δt=20minutes)
 
@@ -61,8 +65,9 @@ conjure_time_step_wizard!(simulation, IterationInterval(20), cfl=0.2, max_Δt=20
 # per-step wall time, and stability (CFL) numbers.
 progress = TimedMessenger()
 add_callback!(simulation, progress, IterationInterval(100))
+#---
 
-# --- Output ---
+#+++ Output
 u, v, w = model.velocities
 b = model.tracers.b
 ζ = ∂x(v) - ∂y(u)              # vertical vorticity
@@ -84,3 +89,4 @@ simulation.output_writers[:zonal] = NetCDFWriter(model, (; b=B, u=U, v=V);
     overwrite_existing = true)
 
 run!(simulation)
+#---

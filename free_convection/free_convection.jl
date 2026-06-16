@@ -1,6 +1,6 @@
 using Oceananigans
 using Oceananigans.Units
-using NCDatasets
+import NCDatasets   # loads Oceananigans' NetCDF extension
 
 # =============================================================================
 # Atmospheric free convection
@@ -13,19 +13,21 @@ using NCDatasets
 # buoyancy via SeawaterBuoyancy with an ideal-gas linear EOS (β = 0).
 # =============================================================================
 
-# --- Physical parameters ---
+#+++ Physical parameters
 θ₀  = 300.0     # K, reference potential temperature
 g   = 9.81      # m/s², gravitational acceleration
 α   = 1 / θ₀    # K⁻¹, thermal expansion coefficient (ideal gas: α = 1/θ₀)
 N²  = 1e-4      # s⁻², initial buoyancy frequency (weak stratification)
 Qᵀ  = 5e-2      # K m/s, kinematic surface heat flux (positive = warming)
 z₀  = 0.1meters # aerodynamic roughness length (moderate terrain / farmland)
+#---
 
-# --- Domain ---
+#+++ Domain
 Lx = Ly = 4kilometers
 H  = 2kilometers
+#---
 
-# --- Grid ---
+#+++ Grid
 Nx = Ny = 64
 Nz = 32
 
@@ -34,27 +36,31 @@ grid = RectilinearGrid(size     = (Nx, Ny, Nz),
                        y        = (0, Ly),
                        z        = (0, H),
                        topology = (Periodic, Periodic, Bounded))
+#---
 
-# --- Drag coefficient from law of the wall ---
+#+++ Drag coefficient from law of the wall
 const κᵛᵏ = 0.4   # von Kármán constant
 z₁ = minimum_zspacing(grid, Center(), Center(), Center()) / 2
 Cd = (κᵛᵏ / log(z₁ / z₀))^2
 @info "z₁ = $(z₁) m,  Cd = $(round(Cd, sigdigits=3))"
+#---
 
-# --- Boundary conditions ---
+#+++ Boundary conditions
 drag  = BulkDrag(coefficient=Cd)
 u_bcs = FieldBoundaryConditions(bottom = drag)
 v_bcs = FieldBoundaryConditions(bottom = drag)
 
 # Surface heat flux at z = 0: positive flux warms the surface layer
 T_bcs = FieldBoundaryConditions(bottom = FluxBoundaryCondition(Qᵀ))
+#---
 
-# --- Buoyancy: temperature via SeawaterBuoyancy with ideal-gas linear EOS ---
+#+++ Buoyancy: temperature via SeawaterBuoyancy with ideal-gas linear EOS
 # b = g · α · (T - T_ref),  β = 0 (dry atmosphere, no salinity)
 buoyancy = SeawaterBuoyancy(equation_of_state = LinearEquationOfState(thermal_expansion = α, haline_contraction = 0),
                             constant_salinity = 0)
+#---
 
-# --- Model ---
+#+++ Model
 model = NonhydrostaticModel(grid;
                             closure             = DynamicSmagorinsky(averaging = (1, 2)), # Planar averaged, dynamic Smagorinsky
                             advection           = WENO(order=5),
@@ -62,14 +68,16 @@ model = NonhydrostaticModel(grid;
                             buoyancy            = buoyancy,
                             tracers             = :T,
                             boundary_conditions = (u=u_bcs, v=v_bcs, T=T_bcs))
+#---
 
-# --- Initial conditions ---
+#+++ Initial conditions
 # Weak linear stratification + small-amplitude noise to seed convection
 dθdz = N² / (g * α)   # K/m, consistent with chosen N²
 θᵢ(x, y, z) = θ₀ + dθdz * z + 0.01 * randn()
 set!(model, T=θᵢ)
+#---
 
-# --- Simulation ---
+#+++ Simulation
 w★  = (g / θ₀ * Qᵀ * H)^(1/3)   # Deardorff velocity scale (m/s)
 Δt₀ = 0.1 * minimum_zspacing(grid) / w★
 simulation = Simulation(model; Δt=Δt₀, stop_time=4hours)
@@ -77,8 +85,9 @@ conjure_time_step_wizard!(simulation, cfl=0.8, IterationInterval(5))
 
 using Oceanostics.ProgressMessengers: TimedMessenger
 add_callback!(simulation, TimedMessenger(), IterationInterval(100))
+#---
 
-# --- Output ---
+#+++ Output
 u, v, w = model.velocities
 T = model.tracers.T
 
@@ -98,3 +107,4 @@ simulation.output_writers[:xz_slice] = NetCDFWriter(model,
     overwrite_existing = true)
 
 run!(simulation)
+#---

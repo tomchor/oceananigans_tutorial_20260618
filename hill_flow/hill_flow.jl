@@ -1,5 +1,5 @@
 using Oceananigans
-using NCDatasets
+import NCDatasets   # loads Oceananigans' NetCDF extension
 
 # =============================================================================
 # Flow past a Gaussian hill (2D, xz)
@@ -9,7 +9,7 @@ using NCDatasets
 # to the east.  The immersed boundary method handles the topography.
 # =============================================================================
 
-# --- Physical parameters ---
+#+++ Physical parameters
 Lx = 20.0
 H  = 2.0
 U∞ = 1.0
@@ -21,8 +21,9 @@ h₀ = 0.4H       # peak height above the bottom
 σ  = Lx / 10    # horizontal half-width
 
 hill(x) = h₀ * exp(-((x - x₀) / σ)^2) - H   # returns z_bottom(x)
+#---
 
-# --- Grid ---
+#+++ Grid
 Nx, Nz = 128, 32
 
 underlying_grid = RectilinearGrid(size     = (Nx, Nz),
@@ -37,25 +38,28 @@ Cd = (κᵛᵏ / log(z₁ / z₀))^2
 
 hill_params = (; x₀, h₀, σ, H)
 grid = ImmersedBoundaryGrid(underlying_grid, GridFittedBottom(hill))
+#---
 
-# --- Boundary conditions ---
+#+++ Boundary conditions
 drag = BulkDrag(coefficient=Cd)
 u_bcs = FieldBoundaryConditions(west     = NormalFlowBoundaryCondition(U∞), # Constant inflow
                                 east     = NormalFlowBoundaryCondition(U∞, scheme = PerturbationAdvection()), # Perturbations get advected out
                                 bottom   = drag,
                                 immersed = drag)
+#---
 
-# --- Model ---
+#+++ Model
 using Oceananigans.Solvers: ConjugateGradientPoissonSolver
 model = NonhydrostaticModel(grid;
                             boundary_conditions = (u=u_bcs,),
-                            advection           = WENO(order=5), # Implitict dissipation
+                            advection           = WENO(order=5), # Implicit dissipation
                             timestepper         = :RungeKutta3,
                             pressure_solver     = ConjugateGradientPoissonSolver(grid; maxiter = 10)) # More accurate results with immersed boundary
 
 set!(model, u=U∞)
+#---
 
-# --- Simulation ---
+#+++ Simulation
 Δt₀ = 0.1 * minimum_xspacing(grid) / U∞
 simulation = Simulation(model; Δt=Δt₀, stop_time=50)
 conjure_time_step_wizard!(simulation, cfl=0.5, IterationInterval(2))
@@ -63,8 +67,9 @@ conjure_time_step_wizard!(simulation, cfl=0.5, IterationInterval(2))
 using Oceanostics.ProgressMessengers
 progress(sim) = @info (PercentageProgress() + SimulationTime() + TimeStep() + AdvectiveCFLNumber() + MaxUVelocity() + StepDuration())(sim)
 add_callback!(simulation, progress, IterationInterval(100))
+#---
 
-# --- Output ---
+#+++ Output
 u, v, w = model.velocities
 ω = Field(∂z(u) - ∂x(w))   # vorticity in the xz plane
 
@@ -75,3 +80,4 @@ simulation.output_writers[:fields] = NetCDFWriter(model,
     overwrite_existing = true)
 
 run!(simulation)
+#---
